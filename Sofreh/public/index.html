@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>سُفره | رستوران ایرانی</title>
+<meta name="description" content="اصالت غذای ایرانی. منوی کامل، سفارش آنلاین و رزرو میز.">
+<meta name="theme-color" content="#14295c">
+<link rel="preload" href="fonts/Vazirmatn-Bold.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="hero">
+  <header class="top">
+    <a class="logo" href="#">سُفره</a>
+    <nav aria-label="ناوبری"><a href="#menu">منو</a><a href="#reserve">رزرو میز</a><a href="#contact">آدرس و تماس</a></nav>
+    <button class="cartbtn" id="openCart" type="button">سفارش<b id="cc">۰</b></button>
+  </header>
+  <div class="hero-in">
+    <h1>خورش و پلوی خانگی،<br>روی میز شما</h1>
+    <p>هر صبح مواد تازه می‌خریم و خورش‌ها را ساعت‌ها آرام می‌پزیم. بیایید بنشینید، یا سفارش بدهید تا برایتان بفرستیم.</p>
+    <div class="acts"><a class="btn gold" href="#menu">دیدن منو و سفارش</a><a class="btn line" href="#reserve">رزرو میز</a></div>
+    <div class="facts" id="facts"></div>
+  </div>
+</div>
+
+<main>
+<section class="s" id="menu"><div class="w">
+  <h2>منو</h2><p class="sub">قیمت‌ها به هزار تومان است.</p>
+  <div id="menuList" aria-live="polite">در حال بارگذاری منو…</div>
+</div></section>
+
+<section class="s dark" id="reserve"><div class="w g2">
+  <div><h2>رزرو میز</h2><p class="sub">ساعت و تعداد نفرات را انتخاب کنید. برای تأیید با شما تماس می‌گیریم.</p></div>
+  <div id="rbox"><form id="rform" novalidate>
+    <label for="rn">نام</label><input id="rn" autocomplete="name" required>
+    <label for="rp">موبایل</label><input id="rp" type="tel" inputmode="tel" autocomplete="tel" placeholder="09123456789" required>
+    <div class="row"><div><label for="rd">تاریخ</label><input id="rd" type="date" required></div><div><label for="rt">ساعت</label><select id="rt"></select></div></div>
+    <label for="rg">تعداد نفرات</label><select id="rg"></select>
+    <button class="btn gold" id="rsub" type="submit">ثبت رزرو</button><p class="msg" id="rmsg" role="alert"></p>
+  </form></div>
+</div></section>
+</main>
+
+<footer id="contact"><div class="w"><div id="finfo"></div><div>© سُفره</div></div></footer>
+
+<dialog id="cart" aria-labelledby="ct"><div class="dg">
+  <header><h2 id="ct">سفارش شما</h2><button type="button" id="closeCart" aria-label="بستن">×</button></header>
+  <div class="bd light">
+    <div id="items"></div>
+    <form id="oform" novalidate>
+      <div class="seg" role="group" aria-label="نوع سفارش">
+        <label><input type="radio" name="type" value="delivery" checked><span>ارسال</span></label>
+        <label><input type="radio" name="type" value="pickup"><span>بیرون‌بر</span></label>
+        <label><input type="radio" name="type" value="dine"><span>در رستوران</span></label>
+      </div>
+      <label for="on">نام</label><input id="on" autocomplete="name" required>
+      <label for="op">موبایل</label><input id="op" type="tel" inputmode="tel" autocomplete="tel" placeholder="09123456789" required>
+      <div id="addrBox"><label for="oa">آدرس</label><textarea id="oa" rows="2" autocomplete="street-address"></textarea></div>
+      <label for="onote">توضیحات (اختیاری)</label><input id="onote">
+      <button class="btn" id="osub" type="submit" style="width:100%">ثبت سفارش</button><p class="msg" id="omsg" role="alert"></p>
+    </form>
+  </div>
+</div></dialog>
+<script src="app.js"></script>
+</body>
+</html>

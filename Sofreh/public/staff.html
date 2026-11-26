@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>پنل کارکنان | سُفره</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="login" id="login" hidden>
+  <h1 style="font-size:28px;margin:0 0 16px">ورود کارکنان</h1>
+  <form id="lf"><label for="pin">رمز</label><input id="pin" type="password" inputmode="numeric" autocomplete="current-password" required>
+  <button class="btn" type="submit" style="width:100%">ورود</button><p class="msg err" id="lmsg" role="alert"></p></form>
+</div>
+<div class="stf light" id="app" hidden>
+  <div class="bar"><h1>پنل سُفره</h1><div><button class="btn" id="snd" type="button" aria-pressed="false">صدای سفارش جدید: خاموش</button> <button class="btn line" id="out" type="button" style="color:var(--ink)">خروج</button></div></div>
+  <div class="tabs" role="tablist"><button role="tab" id="t-o" aria-selected="true">سفارش‌ها <span id="no"></span></button><button role="tab" id="t-r" aria-selected="false">رزروها <span id="nr"></span></button></div>
+  <div id="list" aria-live="polite"></div>
+</div>
+<script>
+const $ = id => document.getElementById(id), fa = v => Number(v).toLocaleString('fa-IR');
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const ST = { new: 'جدید', preparing: 'در حال آماده‌سازی', ready: 'آماده', done: 'تحویل شد', confirmed: 'تأیید شد', seated: 'نشستند', cancelled: 'لغو شد' };
+const FLOW = { orders: [['preparing', 'شروع آماده‌سازی', 'new'], ['ready', 'آماده شد', 'preparing'], ['done', 'تحویل شد', 'ready']], reservations: [['confirmed', 'تأیید رزرو', 'new'], ['seated', 'رسیدند', 'confirmed']] };
+const TYPE = { delivery: 'ارسال', pickup: 'بیرون‌بر', dine: 'در رستوران' };
+let tab = 'orders', data = { orders: [], reservations: [] }, known = null, sound = false, timer;
+const tm = t => new Date(t).toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' });
+const day = d => new Date(d + 'T12:00').toLocaleDateString('fa-IR-u-ca-persian', { weekday: 'long', day: 'numeric', month: 'long' });
+
+async function api(url, opt) { const r = await fetch(url, opt); if (r.status === 401) { show(false); throw 0; } const j = await r.json(); if (!r.ok) throw new Error(j.error); return j; }
+function show(on) { $('app').hidden = !on; $('login').hidden = on; clearInterval(timer); if (on) { load(); timer = setInterval(load, 8000); } }
+function beep() { try { const c = new AudioContext(), o = c.createOscillator(); o.frequency.value = 880; o.connect(c.destination); o.start(); o.stop(c.currentTime + .35); } catch {} }
+async function load() {
+  try {
+    data = await api('/api/staff/data');
+    const ids = new Set(data.orders.concat(data.reservations).filter(x => x.status === 'new').map(x => x.id));
+    if (known && sound && [...ids].some(i => !known.has(i))) beep();
+    known = ids; draw();
+  } catch {}
+}
+function draw() {
+  const act = { orders: data.orders.filter(o => o.status === 'new').length, reservations: data.reservations.filter(o => o.status === 'new').length };
+  $('no').textContent = act.orders ? `(${fa(act.orders)} جدید)` : ''; $('nr').textContent = act.reservations ? `(${fa(act.reservations)} جدید)` : '';
+  const rows = data[tab];
+  $('list').innerHTML = rows.length ? rows.map(tab === 'orders' ? order : resv).join('') : `<p class="empty">${tab === 'orders' ? 'هنوز سفارشی ثبت نشده.' : 'هنوز رزروی ثبت نشده.'}</p>`;
+}
+const acts = (kind, r) => {
+  const next = FLOW[kind].filter(f => f[2] === r.status).map(f => `<button class="p" data-k="${kind}" data-id="${r.id}" data-s="${f[0]}">${f[1]}</button>`).join('');
+  const cancel = ['done', 'seated', 'cancelled'].includes(r.status) ? '' : `<button data-k="${kind}" data-id="${r.id}" data-s="cancelled">لغو</button>`;
+  return `<div class="acts">${next}${cancel}</div>`;
+};
+const order = o => `<article class="tk ${o.status}"><div class="h"><span>سفارش ${fa(o.id)} · ${esc(o.name)}</span><span class="tag">${ST[o.status]}</span></div>
+ <div class="m">${tm(o.at)} · ${TYPE[o.type]} · <a href="tel:${esc(o.phone)}" dir="ltr">${esc(o.phone)}</a>${o.address ? ' · ' + esc(o.address) : ''}</div>
+ <ul>${o.items.map(i => `<li>${esc(i.name)} × ${fa(i.qty)}</li>`).join('')}</ul>${o.note ? `<div class="m">توضیح: ${esc(o.note)}</div>` : ''}
+ <div class="h"><span>جمع: ${fa(o.total)} هزار تومان</span></div>${acts('orders', o)}</article>`;
+const resv = r => `<article class="tk ${r.status}"><div class="h"><span>${esc(r.name)} · ${fa(r.guests)} نفر</span><span class="tag">${ST[r.status]}</span></div>
+ <div class="m">${day(r.date)} · ساعت ${r.time.split(':').map(fa).join(':')} · <a href="tel:${esc(r.phone)}" dir="ltr">${esc(r.phone)}</a></div>${acts('reservations', r)}</article>`;
+
+$('list').onclick = async e => { const b = e.target.closest('button[data-s]'); if (!b) return; b.disabled = true;
+  try { await api(`/api/staff/${b.dataset.k}/${b.dataset.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: b.dataset.s }) }); load(); } catch { b.disabled = false; } };
+for (const [id, t] of [['t-o', 'orders'], ['t-r', 'reservations']]) $(id).onclick = () => { tab = t; $('t-o').setAttribute('aria-selected', t === 'orders'); $('t-r').setAttribute('aria-selected', t === 'reservations'); draw(); };
+$('snd').onclick = () => { sound = !sound; $('snd').setAttribute('aria-pressed', sound); $('snd').textContent = 'صدای سفارش جدید: ' + (sound ? 'روشن' : 'خاموش'); if (sound) beep(); };
+$('out').onclick = async () => { await fetch('/api/staff/logout', { method: 'POST' }); show(false); };
+$('lf').onsubmit = async e => { e.preventDefault(); try { await api('/api/staff/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pin: $('pin').value }) }); $('pin').value = ''; $('lmsg').textContent = ''; show(true); } catch (er) { if (er) $('lmsg').textContent = er.message; } };
+fetch('/api/staff/data').then(r => show(r.ok));
+</script>
+</body>
+</html>
